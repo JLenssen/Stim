@@ -138,6 +138,9 @@ struct simd_bit_table {
         return num_simd_words_minor * W;
     }
 
+    // xor rows of simd bit table
+    simd_bits<W> xor_table_rows(std::vector<int>);
+
     /// Returns a padded description of the table's contents.
     std::string str() const;
     /// Returns a truncated square description of the table's contents.

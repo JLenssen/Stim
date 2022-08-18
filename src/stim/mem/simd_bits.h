@@ -97,6 +97,9 @@ struct simd_bits {
         return simd_bits_range_ref<W>(ptr_simd + word_offset, sub_num_simd_words);
     }
 
+    // Convert simd bits to vector of booleans
+    std::vector<bool> simd_bits_to_bool_vec(size_t bits);
+
     /// Returns the number of bits that are 1 in the bit range.
     size_t popcnt() const;
 

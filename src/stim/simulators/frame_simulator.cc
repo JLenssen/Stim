@@ -81,6 +81,13 @@ void FrameSimulator::reset_all() {
     m_record.clear();
 }
 
+void write_reference_sample(frame_sim_params params, uint64_t measurements, simd_bits<MAX_BITWORD_WIDTH> reference) {
+    auto writer = MeasureRecordWriter::make(params.out, params.format);
+    auto f8 = (measurements >> 3) + 1;
+    writer->write_bytes({reference.u8, reference.u8 + f8});
+    writer->write_end();
+}
+
 void write_frame_metadata(frame_sim_params params, size_t batch_size, size_t qubits, uint64_t measurements, uint64_t frames) {
     auto writer = MeasureRecordWriter::make(params.out, params.format);
     writer->write_bits(reinterpret_cast<uint8_t*>(&batch_size), sizeof(size_t)*8);
@@ -93,25 +100,30 @@ void write_frame_metadata(frame_sim_params params, size_t batch_size, size_t qub
     writer->write_end();
 }
 
-void write_frame_data(simd_bit_table<MAX_BITWORD_WIDTH> table, frame_sim_params params) {
-
+void write_frame_data(simd_bit_table<MAX_BITWORD_WIDTH> table, frame_sim_params params, size_t rows, size_t cols) {
+    auto writer = MeasureRecordWriter::make(params.out, params.format);
+    // write table row-wise to file
+    auto f8 = (cols >> 3) + 1;
+    for(size_t row = 0; row < rows; row++) {
+        writer->write_bytes({table[row].u8, table[row].u8+f8});
+        writer->write_end();
+    }
 }
 
-void FrameSimulator::reset_all_and_run(const Circuit &circuit) {
-    if(params.record_frames) {
-        write_frame_metadata(params, batch_size, circuit.count_qubits(), circuit.count_measurements(), circuit.count_ticks());
+void FrameSimulator::reset_all_and_run(const Circuit &circuit, bool reset) {
+    if(reset) {
+        reset_all();
     }
-    reset_all();
     circuit.for_each_operation([&](const Operation &op) {
         // frames will be recorded at every TICK gate instruction
         if(params.record_frames && op.gate->id == gate_name_to_id("TICK")) {
-            write_frame_data(x_table, params);
-            write_frame_data(z_table, params);
+            write_frame_data(x_table, params, circuit.count_qubits(), batch_size);
+            write_frame_data(z_table, params, circuit.count_qubits(), batch_size);
         }
         (this->*op.gate->frame_simulator_function)(op.target_data);
     });
     if(params.record_frames) {
-        write_frame_data(m_record.storage, params);
+        write_frame_data(m_record.storage, params, circuit.count_measurements(), batch_size);
     }
 }
 
@@ -563,6 +575,10 @@ simd_bit_table<MAX_BITWORD_WIDTH> FrameSimulator::sample_flipped_measurements(
 
 simd_bit_table<MAX_BITWORD_WIDTH> FrameSimulator::sample(
     const Circuit &circuit, const simd_bits<MAX_BITWORD_WIDTH> &reference_sample, size_t num_samples, std::mt19937_64 &rng, frame_sim_params params) {
+    if(params.record_frames) {
+        write_frame_metadata(params, num_samples, circuit.count_qubits(), circuit.count_measurements(), circuit.count_ticks());
+        write_reference_sample(params, circuit.count_measurements(), reference_sample);
+    }
     return transposed_vs_ref(
         num_samples, FrameSimulator::sample_flipped_measurements(circuit, num_samples, rng, params), reference_sample);
 }

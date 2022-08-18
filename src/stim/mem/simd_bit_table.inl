@@ -16,6 +16,8 @@
 #include <cassert>
 #include <cstring>
 #include <sstream>
+#include "simd_bit_table.h"
+
 
 namespace stim {
 
@@ -267,7 +269,16 @@ simd_bit_table<W> simd_bit_table<W>::random(
     return result;
 }
 
-template <size_t W>
+    template<size_t W>
+simd_bits<W> simd_bit_table<W>::xor_table_rows(std::vector<int> v) {
+    simd_bits<W> res(this->num_simd_words_minor);
+    for(size_t k = 0; k < v.size(); k++) {
+        res ^= (*this)[k];
+    }
+    return res;
+}
+
+    template <size_t W>
 std::ostream &operator<<(std::ostream &out, const stim::simd_bit_table<W> &v) {
     for (size_t k = 0; k < v.num_major_bits_padded(); k++) {
         if (k) {

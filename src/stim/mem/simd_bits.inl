@@ -18,6 +18,8 @@
 #include <sstream>
 
 #include "stim/mem/simd_util.h"
+#include "simd_bits.h"
+
 
 namespace stim {
 
@@ -186,6 +188,15 @@ simd_bits<W> &simd_bits<W>::swap_with(simd_bits_range_ref<W> other) {
 template <size_t W>
 size_t simd_bits<W>::popcnt() const {
     return simd_bits_range_ref<W>(*this).popcnt();
+}
+
+template<size_t W>
+std::vector<bool> simd_bits<W>::simd_bits_to_bool_vec(size_t bits) {
+    std::vector<bool> res;
+    for(size_t k = 0; k < bits; k++) {
+        res.push_back((*this)[k]);
+    }
+    return res;
 }
 
 }

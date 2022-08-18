@@ -98,7 +98,7 @@ struct FrameSimulator {
     PauliString get_frame(size_t sample_index) const;
     void set_frame(size_t sample_index, const PauliStringRef &new_frame);
 
-    void reset_all_and_run(const Circuit &circuit);
+    void reset_all_and_run(const Circuit &circuit, bool reset=false);
     void reset_all();
 
     void measure_x(const OperationData &target_data);

@@ -81,11 +81,38 @@ void FrameSimulator::reset_all() {
     m_record.clear();
 }
 
+void write_frame_metadata(frame_sim_params params, size_t batch_size, size_t qubits, uint64_t measurements, uint64_t frames) {
+    auto writer = MeasureRecordWriter::make(params.out, params.format);
+    writer->write_bits(reinterpret_cast<uint8_t*>(&batch_size), sizeof(size_t)*8);
+    writer->write_end();
+    writer->write_bits(reinterpret_cast<uint8_t*>(&qubits), sizeof(size_t)*8);
+    writer->write_end();
+    writer->write_bits(reinterpret_cast<uint8_t*>(&measurements), sizeof(uint64_t)*8);
+    writer->write_end();
+    writer->write_bits(reinterpret_cast<uint8_t*>(&frames), sizeof(uint64_t)*8);
+    writer->write_end();
+}
+
+void write_frame_data(simd_bit_table<MAX_BITWORD_WIDTH> table, frame_sim_params params) {
+
+}
+
 void FrameSimulator::reset_all_and_run(const Circuit &circuit) {
+    if(params.record_frames) {
+        write_frame_metadata(params, batch_size, circuit.count_qubits(), circuit.count_measurements(), circuit.count_ticks());
+    }
     reset_all();
     circuit.for_each_operation([&](const Operation &op) {
+        // frames will be recorded at every TICK gate instruction
+        if(params.record_frames && op.gate->id == gate_name_to_id("TICK")) {
+            write_frame_data(x_table, params);
+            write_frame_data(z_table, params);
+        }
         (this->*op.gate->frame_simulator_function)(op.target_data);
     });
+    if(params.record_frames) {
+        write_frame_data(m_record.storage, params);
+    }
 }
 
 void FrameSimulator::measure_x(const OperationData &target_data) {
@@ -527,16 +554,17 @@ void FrameSimulator::PAULI_CHANNEL_2(const OperationData &target_data) {
 }
 
 simd_bit_table<MAX_BITWORD_WIDTH> FrameSimulator::sample_flipped_measurements(
-    const Circuit &circuit, size_t num_samples, std::mt19937_64 &rng) {
+    const Circuit &circuit, size_t num_samples, std::mt19937_64 &rng, frame_sim_params params) {
     FrameSimulator sim(circuit.count_qubits(), num_samples, SIZE_MAX, rng);
+    sim.params = params;
     sim.reset_all_and_run(circuit);
     return sim.m_record.storage;
 }
 
 simd_bit_table<MAX_BITWORD_WIDTH> FrameSimulator::sample(
-    const Circuit &circuit, const simd_bits<MAX_BITWORD_WIDTH> &reference_sample, size_t num_samples, std::mt19937_64 &rng) {
+    const Circuit &circuit, const simd_bits<MAX_BITWORD_WIDTH> &reference_sample, size_t num_samples, std::mt19937_64 &rng, frame_sim_params params) {
     return transposed_vs_ref(
-        num_samples, FrameSimulator::sample_flipped_measurements(circuit, num_samples, rng), reference_sample);
+        num_samples, FrameSimulator::sample_flipped_measurements(circuit, num_samples, rng, params), reference_sample);
 }
 
 void FrameSimulator::CORRELATED_ERROR(const OperationData &target_data) {

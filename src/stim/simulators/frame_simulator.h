@@ -26,6 +26,15 @@
 
 namespace stim {
 
+
+struct frame_sim_params {
+    bool record_frames;
+    FILE* out;
+    SampleFormat format;
+    frame_sim_params():  record_frames(false), out(nullptr), format(SAMPLE_FORMAT_B8) {}
+    frame_sim_params(bool record, FILE* out, SampleFormat format): record_frames(record), out(out), format(format) {}
+};
+
 /// A Pauli Frame simulator that computes many samples simultaneously.
 ///
 /// This simulator tracks, for each qubit, whether or not that qubit is bit flipped and/or phase flipped.
@@ -42,6 +51,7 @@ struct FrameSimulator {
     simd_bits<MAX_BITWORD_WIDTH> last_correlated_error_occurred;  // correlated error flag for each instance.
     simd_bit_table<MAX_BITWORD_WIDTH> sweep_table;                // Shot-to-shot configuration data.
     std::mt19937_64 &rng;                      // Random number generator used for generating entropy.
+    frame_sim_params params{};
 
     // Determines whether e.g. 50% Z errors are multiplied into the frame when measuring in the Z basis.
     // This is necessary for correct sampling.
@@ -61,7 +71,7 @@ struct FrameSimulator {
     /// Returns:
     ///     A table of results. First index (major) is measurement index, second index (minor) is shot index.
     ///     Each bit in the table is whether a specific measurement was flipped in a specific shot.
-    static simd_bit_table<MAX_BITWORD_WIDTH> sample_flipped_measurements(const Circuit &circuit, size_t num_shots, std::mt19937_64 &rng);
+    static simd_bit_table<MAX_BITWORD_WIDTH> sample_flipped_measurements(const Circuit &circuit, size_t num_shots, std::mt19937_64 &rng, frame_sim_params params = frame_sim_params{});
 
     /// Returns a batch of samples from the circuit.
     ///
@@ -75,7 +85,7 @@ struct FrameSimulator {
     ///     A table of results. First index (major) is measurement index, second index (minor) is shot index.
     ///     Each bit in the table is a measurement result.
     static simd_bit_table<MAX_BITWORD_WIDTH> sample(
-        const Circuit &circuit, const simd_bits<MAX_BITWORD_WIDTH> &reference_sample, size_t num_samples, std::mt19937_64 &rng);
+        const Circuit &circuit, const simd_bits<MAX_BITWORD_WIDTH> &reference_sample, size_t num_samples, std::mt19937_64 &rng, frame_sim_params params = frame_sim_params{});
 
     static void sample_out(
         const Circuit &circuit,

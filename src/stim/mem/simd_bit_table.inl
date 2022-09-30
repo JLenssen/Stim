@@ -269,13 +269,41 @@ simd_bit_table<W> simd_bit_table<W>::random(
     return result;
 }
 
-    template<size_t W>
+template<size_t W>
 simd_bits<W> simd_bit_table<W>::xor_table_rows(std::vector<int> v) {
     simd_bits<W> res(this->num_simd_words_minor);
     for(size_t k = 0; k < v.size(); k++) {
         res ^= (*this)[k];
     }
     return res;
+}
+
+template<size_t W>
+simd_bit_table<W> simd_bit_table<W>::get_row_selection(std::vector<int> v) {
+    simd_bit_table<W> result(v.size(), this->num_minor_bits_padded());
+    for(size_t k = 0; k < v.size(); k++) {
+        result[k] ^= (*this)[v[k]];
+    }
+    return result;
+}
+
+template<size_t W>
+simd_bit_table<W> simd_bit_table<W>::get_row_range(size_t start, size_t end) {
+    assert(start < end);
+    simd_bit_table<W> result(end-start, this->num_minor_bits_padded());
+    for(size_t k = start; k < end; k++) {
+        result[k-start] ^= (*this)[k];
+    }
+    return result;
+}
+
+template<size_t W>
+simd_bits<W> simd_bit_table<W>::or_table_rows() {
+    simd_bits<W> result(this->num_minor_bits_padded());
+    for(size_t k = 0; k < this->num_major_bits_padded(); k++) {
+        result |= (*this)[k];
+    }
+    return result;
 }
 
     template <size_t W>

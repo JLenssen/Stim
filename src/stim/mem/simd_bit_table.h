@@ -140,6 +140,12 @@ struct simd_bit_table {
 
     // xor rows of simd bit table
     simd_bits<W> xor_table_rows(std::vector<int>);
+    // select rows from simd bit table
+    simd_bit_table get_row_selection(std::vector<int>);
+    // select row range from simd bit table
+    simd_bit_table get_row_range(size_t, size_t);
+    // or rows of simd bit table
+    simd_bits<W> or_table_rows();
 
     /// Returns a padded description of the table's contents.
     std::string str() const;

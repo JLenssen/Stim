@@ -31,8 +31,9 @@ struct frame_sim_params {
     bool record_frames;
     FILE* out;
     SampleFormat format;
-    frame_sim_params():  record_frames(false), out(nullptr), format(SAMPLE_FORMAT_B8) {}
-    frame_sim_params(bool record, FILE* out, SampleFormat format): record_frames(record), out(out), format(format) {}
+    bool frame_randomization;
+    frame_sim_params():  record_frames(false), out(nullptr), format(SAMPLE_FORMAT_B8), frame_randomization(true) {}
+    frame_sim_params(bool record, FILE* out, SampleFormat format, bool randomization): record_frames(record), out(out), format(format), frame_randomization(randomization) {}
 };
 
 /// A Pauli Frame simulator that computes many samples simultaneously.

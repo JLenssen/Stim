@@ -569,6 +569,7 @@ simd_bit_table<MAX_BITWORD_WIDTH> FrameSimulator::sample_flipped_measurements(
     const Circuit &circuit, size_t num_samples, std::mt19937_64 &rng, frame_sim_params params) {
     FrameSimulator sim(circuit.count_qubits(), num_samples, SIZE_MAX, rng);
     sim.params = params;
+    sim.guarantee_anticommutation_via_frame_randomization = params.frame_randomization;
     sim.reset_all_and_run(circuit);
     return sim.m_record.storage;
 }

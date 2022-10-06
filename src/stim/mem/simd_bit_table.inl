@@ -273,7 +273,7 @@ template<size_t W>
 simd_bits<W> simd_bit_table<W>::xor_table_rows(std::vector<int> v) {
     simd_bits<W> res(this->num_simd_words_minor);
     for(size_t k = 0; k < v.size(); k++) {
-        res ^= (*this)[k];
+        res ^= (*this)[v[k]];
     }
     return res;
 }

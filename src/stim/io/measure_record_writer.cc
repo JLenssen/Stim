@@ -219,6 +219,15 @@ simd_bit_table<MAX_BITWORD_WIDTH> stim::transposed_vs_ref(
     return result;
 }
 
+simd_bit_table<MAX_BITWORD_WIDTH> stim::apply_mask_row_wise(
+        size_t num_rows, const simd_bit_table<MAX_BITWORD_WIDTH> &table, const simd_bits<MAX_BITWORD_WIDTH> &mask) {
+    auto result = table.transposed();
+    for (size_t s = 0; s < num_rows; s++) {
+        result[s].word_range_ref(0, mask.num_simd_words) &= mask;
+    }
+    return result.transposed();
+}
+
 void stim::write_table_data(
     FILE *out,
     size_t num_shots,

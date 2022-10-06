@@ -102,6 +102,9 @@ struct MeasureRecordWriterFormatDets : MeasureRecordWriter {
 simd_bit_table<MAX_BITWORD_WIDTH> transposed_vs_ref(
     size_t num_samples_raw, const simd_bit_table<MAX_BITWORD_WIDTH> &table, const simd_bits<MAX_BITWORD_WIDTH> &reference_sample);
 
+simd_bit_table<MAX_BITWORD_WIDTH> apply_mask_row_wise(
+        size_t num_rows, const simd_bit_table<MAX_BITWORD_WIDTH> &table, const simd_bits<MAX_BITWORD_WIDTH> &mask);
+
 void write_table_data(
     FILE *out,
     size_t num_shots,

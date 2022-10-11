@@ -26,16 +26,6 @@
 
 namespace stim {
 
-
-struct frame_sim_params {
-    bool record_frames;
-    FILE* out;
-    SampleFormat format;
-    bool frame_randomization;
-    frame_sim_params():  record_frames(false), out(nullptr), format(SAMPLE_FORMAT_B8), frame_randomization(true) {}
-    frame_sim_params(bool record, FILE* out, SampleFormat format, bool randomization): record_frames(record), out(out), format(format), frame_randomization(randomization) {}
-};
-
 /// A Pauli Frame simulator that computes many samples simultaneously.
 ///
 /// This simulator tracks, for each qubit, whether or not that qubit is bit flipped and/or phase flipped.
@@ -44,15 +34,17 @@ struct frame_sim_params {
 struct FrameSimulator {
     size_t num_qubits;            // Number of qubits being tracked.
     size_t batch_size;            // Number of instances being tracked.
-    simd_bit_table<MAX_BITWORD_WIDTH> x_table;       // x_table[q][k] is whether or not there's an X error on qubit q in instance k.
-    simd_bit_table<MAX_BITWORD_WIDTH> z_table;       // z_table[q][k] is whether or not there's a Z error on qubit q in instance k.
+    simd_bit_table<MAX_BITWORD_WIDTH> x_table;       // x_table[q][k] is whether there's an X error on qubit q in instance k.
+    simd_bit_table<MAX_BITWORD_WIDTH> z_table;       // z_table[q][k] is whether there's a Z error on qubit q in instance k.
     MeasureRecordBatch m_record;  // The measurement record.
     simd_bits<MAX_BITWORD_WIDTH> rng_buffer;         // Workspace used when sampling error processes.
     simd_bits<MAX_BITWORD_WIDTH> tmp_storage;        // Workspace used when sampling compound error processes.
     simd_bits<MAX_BITWORD_WIDTH> last_correlated_error_occurred;  // correlated error flag for each instance.
     simd_bit_table<MAX_BITWORD_WIDTH> sweep_table;                // Shot-to-shot configuration data.
     std::mt19937_64 &rng;                      // Random number generator used for generating entropy.
-    frame_sim_params params{};
+
+    bool record_frames = false;                             // Whether to record frames during run
+    std::shared_ptr<MeasureRecordWriter> frame_file_writer; // Writes bytes to frame file
 
     // Determines whether e.g. 50% Z errors are multiplied into the frame when measuring in the Z basis.
     // This is necessary for correct sampling.
@@ -72,7 +64,7 @@ struct FrameSimulator {
     /// Returns:
     ///     A table of results. First index (major) is measurement index, second index (minor) is shot index.
     ///     Each bit in the table is whether a specific measurement was flipped in a specific shot.
-    static simd_bit_table<MAX_BITWORD_WIDTH> sample_flipped_measurements(const Circuit &circuit, size_t num_shots, std::mt19937_64 &rng, frame_sim_params params = frame_sim_params{});
+    static simd_bit_table<MAX_BITWORD_WIDTH> sample_flipped_measurements(const Circuit &circuit, size_t num_shots, std::mt19937_64 &rng);
 
     /// Returns a batch of samples from the circuit.
     ///
@@ -86,7 +78,7 @@ struct FrameSimulator {
     ///     A table of results. First index (major) is measurement index, second index (minor) is shot index.
     ///     Each bit in the table is a measurement result.
     static simd_bit_table<MAX_BITWORD_WIDTH> sample(
-        const Circuit &circuit, const simd_bits<MAX_BITWORD_WIDTH> &reference_sample, size_t num_samples, std::mt19937_64 &rng, frame_sim_params params = frame_sim_params{});
+        const Circuit &circuit, const simd_bits<MAX_BITWORD_WIDTH> &reference_sample, size_t num_samples, std::mt19937_64 &rng);
 
     static void sample_out(
         const Circuit &circuit,

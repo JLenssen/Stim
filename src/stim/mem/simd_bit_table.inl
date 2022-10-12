@@ -288,10 +288,9 @@ simd_bit_table<W> simd_bit_table<W>::get_row_selection(std::vector<int> v) {
 }
 
 template<size_t W>
-simd_bit_table<W> simd_bit_table<W>::get_row_range(size_t start, size_t end) {
-    assert(start < end);
-    simd_bit_table<W> result(end-start, this->num_minor_bits_padded());
-    for(size_t k = start; k < end; k++) {
+simd_bit_table<W> simd_bit_table<W>::get_row_range(size_t start, size_t offset) {
+    simd_bit_table<W> result(offset, this->num_minor_bits_padded());
+    for(size_t k = start; k < start + offset; k++) {
         result[k-start] ^= (*this)[k];
     }
     return result;
